@@ -1,0 +1,34 @@
+# OS X
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Dependency Directories
+/vendor/
+node_modules/
+
+# Environment and Config Files
+.env
+writable/*
+
+# Logs
+writable/logs/*
+writable/session/*
+writable/cache/*
+writable/debugbar/*
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+nbproject/
+
+# Testing
+/phpunit.xml
