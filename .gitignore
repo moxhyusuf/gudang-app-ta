@@ -15,7 +15,7 @@ node_modules/
 
 # Environment and Config Files
 .env
-writable/*
+# writable/*
 
 # Logs
 writable/logs/*
