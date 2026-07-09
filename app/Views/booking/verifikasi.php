@@ -244,6 +244,7 @@ function vBadge($s) {
 
 <script>
 var _tolakId = null;
+UnsavedGuard.watch('#modal-tolak', 'Alasan pembatalan yang sedang diketik belum disimpan. Yakin ingin pindah halaman?');
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -324,7 +325,7 @@ function aksiBatal(id,no){
   document.getElementById('modal-tolak').style.display='flex';
   setTimeout(function(){document.getElementById('tolak-alasan').focus();},100);
 }
-function closeTolakModal(){document.getElementById('modal-tolak').style.display='none';_tolakId=null;}
+function closeTolakModal(){document.getElementById('modal-tolak').style.display='none';_tolakId=null;UnsavedGuard.markClean();}
 function submitBatal(){
   var alasan=document.getElementById('tolak-alasan').value.trim();
   if(!alasan){alert('Alasan pembatalan wajib diisi!');return;}

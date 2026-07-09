@@ -73,10 +73,15 @@
       </div>
 
       <!-- Detail & Edit Rak -->
-      <div class="peta-sub-card detail-sub-card">
-        <div class="card-header-g">📦 Detail &amp; Edit Rak</div>
-        <div class="card-body-g" id="detail-edit-body">
-          <div class="detail-empty">Klik salah satu kotak rak di sebelah kiri untuk melihat detailnya.</div>
+      <div class="detail-modal-overlay" id="detail-modal-overlay">
+        <div class="peta-sub-card detail-sub-card">
+          <div class="card-header-g">
+            📦 Detail &amp; Edit Rak
+            <button type="button" class="detail-modal-close" onclick="closeDetailModal()">✕</button>
+          </div>
+          <div class="card-body-g" id="detail-edit-body">
+            <div class="detail-empty">Klik salah satu kotak rak di sebelah kiri untuk melihat detailnya.</div>
+          </div>
         </div>
       </div>
 
@@ -237,6 +242,25 @@
 .peta-sub-card{background:#fff;display:flex;flex-direction:column;min-height:0}
 .peta-sub-card .card-body-g{flex:1;min-height:0;overflow-y:auto}
 
+/* Detail & Edit Rak: di desktop wrapper ini "tembus" (display:contents) supaya
+   grid .peta-outer-grid tidak berubah sama sekali dari sebelumnya. Baru di HP
+   (lihat media query di bawah) wrapper ini jadi overlay modal sungguhan. */
+.detail-modal-overlay{display:contents}
+.detail-modal-close{display:none}
+@media(max-width:820px){
+  .detail-modal-overlay{
+    display:none;position:fixed;inset:0;z-index:5000;
+    background:rgba(15,32,68,.5);align-items:center;justify-content:center;padding:1rem;
+  }
+  .detail-modal-overlay.show{display:flex}
+  .detail-modal-overlay .detail-sub-card{
+    width:100%;max-width:480px;max-height:85vh;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25);
+  }
+  .detail-modal-overlay .card-header-g{border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between}
+  .detail-modal-close{display:inline-block;background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer;line-height:1;opacity:.85}
+  .detail-modal-close:hover{opacity:1}
+}
+
 /* Card kanan "Material Belum Punya Rak" — tinggi disamakan persis dengan Peta Gudang,
    isi tabelnya di-scroll di dalam supaya kartu tidak memanjang tak terbatas. */
 .map-row-2 > .card-g.unassigned-card{height:var(--map-card-h);display:flex;flex-direction:column}
@@ -284,6 +308,9 @@
 </style>
 
 <script>
+UnsavedGuard.watch('.map-row-1', 'Data kategori rak/import massal yang sedang diisi belum disimpan. Yakin ingin pindah halaman?');
+UnsavedGuard.watch('#detail-modal-overlay', 'Ada perubahan pada detail rak/kategori yang belum disimpan. Yakin ingin pindah halaman?');
+UnsavedGuard.watch('#modal-edit', 'Ada perubahan data material yang belum disimpan. Yakin ingin pindah halaman?');
 // ══════════════════════════════════════════════════════════════════════════
 // PETA GUDANG
 // ══════════════════════════════════════════════════════════════════════════
@@ -350,6 +377,16 @@ function refreshZonaGrid(callback) {
 
 renderZonaTabs();
 
+// Detail & Edit Rak sebagai modal di HP: tutup lewat tombol ✕ atau klik di luar box.
+// Di desktop tidak ada efek apa-apa (wrapper-nya display:contents).
+function closeDetailModal() {
+    var overlay = document.getElementById('detail-modal-overlay');
+    if (overlay) overlay.classList.remove('show');
+}
+document.getElementById('detail-modal-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeDetailModal();
+});
+
 // ══════════════════════════════════════════════════════════════════════════
 // DETAIL & EDIT RAK
 // ══════════════════════════════════════════════════════════════════════════
@@ -357,6 +394,9 @@ function pilihRak(id, type) {
     type = type || 'rak';
     activeBoxKey = type + ':' + id;
     renderZonaGrid();
+
+    var overlay = document.getElementById('detail-modal-overlay');
+    if (overlay) overlay.classList.add('show');
 
     var body = document.getElementById('detail-edit-body');
     body.innerHTML = '<div class="detail-empty">⏳ Memuat detail rak...</div>';
@@ -469,6 +509,7 @@ function saveEditRak() {
     .then(function(r){ return r.json(); })
     .then(function(res) {
         if (!res.success) { errEl.textContent = res.message || 'Gagal menyimpan perubahan.'; errEl.style.display = 'block'; return; }
+        UnsavedGuard.markClean();
         showToast('✅ Perubahan rak tersimpan');
         refreshZonaGrid(function() { pilihRak(parseInt(id, 10), 'rak'); });
     })
@@ -496,6 +537,7 @@ function tambahKategori() {
     .then(function(r){ return r.json(); })
     .then(function(res) {
         if (!res.success) { showAlert(res.message || 'Gagal menyimpan kategori rak', 'error'); return; }
+        UnsavedGuard.markClean();
         document.getElementById('new-kode').value  = '';
         document.getElementById('new-baris').value = '';
         document.getElementById('new-kolom').value = '';
@@ -519,6 +561,7 @@ function importKategori() {
     .then(function(res) {
         var box = document.getElementById('import-result');
         if (!res.success) { box.innerHTML = '<span style="color:var(--clay)">Gagal import.</span>'; return; }
+        UnsavedGuard.markClean();
         var html = '<span style="color:#059669;font-weight:600">✔ ' + res.jumlah_sukses + ' baris berhasil diproses.</span>';
         if (res.gagal && res.gagal.length) {
             html += '<div style="margin-top:.4rem;color:var(--clay)">Dilewati:<ul>' +
@@ -601,6 +644,7 @@ function openEdit(matId) {
 
 function closeEdit() {
     document.getElementById('modal-edit').style.display = 'none';
+    UnsavedGuard.markClean();
 }
 
 function showEditError(msg) {

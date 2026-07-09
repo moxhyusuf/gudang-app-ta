@@ -176,6 +176,7 @@
 
 <script>
 var keranjang = [];
+UnsavedGuard.watch('#tab-form', 'Data pengeluaran (header, item, atau keranjang bon) yang sedang diisi belum disimpan. Yakin ingin pindah halaman?');
 var _lastRequesterList = []; // requester_list dari material yang sedang ditampilkan di form tambah item
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -650,6 +651,7 @@ function simpanBon() {
     .then(function(r){ return r.json(); })
     .then(function(res) {
         if (res.success) {
+            UnsavedGuard.markClean();
             showAlert('✅ ' + res.no_bon + ' berhasil disimpan!').then(function(){
                 window.location.href = window.location.pathname + '?tab=riwayat';
             });

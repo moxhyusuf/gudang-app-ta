@@ -133,8 +133,9 @@ class Monitoring extends BaseController
 
         $db = \Config\Database::connect();
 
-        $requester = trim((string) $this->request->getPost('requester'));
-        $qty       = (int) $this->request->getPost('qty');
+        $requester         = trim((string) $this->request->getPost('requester'));
+        $requesterOriginal = trim((string) $this->request->getPost('original_requester'));
+        $qty               = (int) $this->request->getPost('qty');
 
         if ($requester === '') {
             return $this->response->setJSON(['success' => false, 'message' => 'Nama requester/pemilik wajib diisi.']);
@@ -149,15 +150,37 @@ class Monitoring extends BaseController
         }
         $stok = (int) $material['stok'];
 
-        $existing = $db->query("
+        // Baris yang sedang diedit (dicari berdasarkan nama REQUESTER ASLI sebelum diubah).
+        // Kosong jika ini penambahan requester baru (bukan edit).
+        $editingRow = null;
+        if ($requesterOriginal !== '') {
+            $editingRow = $db->query("
+                SELECT id, qty FROM material_kepemilikan WHERE material_id = ? AND requester = ?
+            ", [$materialId, $requesterOriginal])->getRowArray();
+        }
+
+        // Baris lain yang kebetulan sudah memakai nama TUJUAN (requester baru)
+        $targetRow = $db->query("
             SELECT id, qty FROM material_kepemilikan WHERE material_id = ? AND requester = ?
         ", [$materialId, $requester])->getRowArray();
 
-        // Total qty milik requester LAIN (di luar requester yang sedang diedit)
+        // Jika hasil rename bentrok dengan requester lain yang sudah ada (bukan baris yang sama), tolak
+        if ($editingRow && $targetRow && (int) $editingRow['id'] !== (int) $targetRow['id']) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Nama requester "' . $requester . '" sudah dipakai oleh pemilik lain pada material ini. Gunakan nama lain, atau hapus salah satu terlebih dahulu.',
+            ]);
+        }
+
+        $rowBeingSaved = $editingRow ?: $targetRow; // baris yang akan di-update, jika ada
+        $excludeId     = $rowBeingSaved ? (int) $rowBeingSaved['id'] : null;
+
+        // Total qty milik requester LAIN (di luar baris yang sedang diedit/ditulis), dibandingkan berdasarkan ID, bukan nama
         $totalLain = (int) $db->query("
             SELECT COALESCE(SUM(qty),0) AS t FROM material_kepemilikan
-            WHERE material_id = ? AND requester != ?
-        ", [$materialId, $requester])->getRow()->t;
+            WHERE material_id = ?" . ($excludeId ? " AND id != ?" : ""),
+            $excludeId ? [$materialId, $excludeId] : [$materialId]
+        )->getRow()->t;
 
         if ($totalLain + $qty > $stok) {
             $sisaMax = max(0, $stok - $totalLain);
@@ -167,9 +190,9 @@ class Monitoring extends BaseController
             ]);
         }
 
-        if ($existing) {
-            $db->table('material_kepemilikan')->where('id', $existing['id'])
-                ->update(['qty' => $qty, 'updated_at' => date('Y-m-d H:i:s')]);
+        if ($rowBeingSaved) {
+            $db->table('material_kepemilikan')->where('id', $rowBeingSaved['id'])
+                ->update(['requester' => $requester, 'qty' => $qty, 'updated_at' => date('Y-m-d H:i:s')]);
         } else {
             $db->table('material_kepemilikan')->insert([
                 'material_id' => $materialId,

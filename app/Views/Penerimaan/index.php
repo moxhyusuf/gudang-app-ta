@@ -2,7 +2,7 @@
 <?= $this->section('content') ?>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/choices.js/10.2.0/choices.min.css"/>
-<script src="/js/rak-picker.js"></script>
+<script src="/js/rak-picker.js?v=2"></script>
 
 <div class="page-hd">
   <div class="page-hd-left">
@@ -76,7 +76,7 @@
     </div>
 
     <!-- Tambah Item -->
-    <div class="card-g">
+    <div class="card-g card-tambah-item">
       <div class="card-header-g">Tambah Item</div>
       <div class="card-body-g">
         <div class="mode-bar mb-2">
@@ -207,6 +207,8 @@
 
 <script>
 var keranjang = [];
+UnsavedGuard.watch('#tab-form', 'Data penerimaan (header, item, atau keranjang) yang sedang diisi belum disimpan. Yakin ingin pindah halaman?');
+UnsavedGuard.watch('#modal-detail', 'Ada perubahan pada detail penerimaan yang belum disimpan. Yakin ingin pindah halaman?');
 var choicesSupplier;
 
 // Batch options generated from DB
@@ -725,6 +727,7 @@ function simpanPenerimaan() {
     .then(function(r){ return r.json(); })
     .then(function(res) {
         if (res.success) {
+            UnsavedGuard.markClean();
             showAlert(res.no_surat + ' berhasil disimpan!').then(function(){
                 window.location.href = window.location.pathname + '?tab=riwayat';
             });
@@ -948,6 +951,7 @@ function simpanEditHeader(id) {
     .then(function(r){ return r.json(); })
     .then(function(res) {
         if (res.success) {
+            UnsavedGuard.markClean();
             alert('✅ Header berhasil diperbarui!');
             reloadDetail(id);
         } else {
@@ -971,6 +975,7 @@ function simpanEditItem(headerId, detailId) {
     .then(function(r){ return r.json(); })
     .then(function(res) {
         if (res.success) {
+            UnsavedGuard.markClean();
             alert('✅ Item berhasil diperbarui!');
             reloadDetail(headerId);
         } else {
@@ -1041,6 +1046,7 @@ function simpanTambahItem(headerId, materialId) {
     .then(function(r){ return r.json(); })
     .then(function(res) {
         if (res.success) {
+            UnsavedGuard.markClean();
             alert('✅ Material berhasil ditambahkan ke surat!');
             reloadDetail(headerId);
         } else {
@@ -1224,6 +1230,12 @@ function escHtml(s) {
 .tbl-g td{padding:.45rem .6rem;border-bottom:1px solid #f0f2f8;font-size:.83rem}
 .tbl-g tbody tr:hover{background:#f9fafb}
 @media(max-width:768px){.form-grid-2{grid-template-columns:1fr}.form-grid-2-sm{grid-template-columns:1fr}}
+
+/* .card-g pakai backdrop-filter, yang otomatis membentuk stacking context
+   sendiri per kartu. Tanpa ini, dropdown Lokasi Rak (z-index:60) di kartu
+   "Tambah Item" ketimbun kartu "Keranjang" di bawahnya, karena keduanya
+   stacking context terpisah dan Keranjang render belakangan di DOM. */
+.card-tambah-item{position:relative;z-index:5}
 
 /* ============================================================
    RESPONSIVE — HP (desktop/laptop tidak berubah)

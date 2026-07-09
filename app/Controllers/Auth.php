@@ -29,12 +29,15 @@ class Auth extends BaseController
 
         if ($user) {
             session()->set([
-                'logged_in' => true,
-                'user_id'   => $user['id'],
-                'nama'      => $user['nama'],
-                'username'  => $user['username'],
-                'role'      => $user['role'],
-                'plant_id'  => $user['plant_id'],
+                'logged_in'   => true,
+                'user_id'     => $user['id'],
+                'nama'        => $user['nama'],
+                'username'    => $user['username'],
+                'role'        => $user['role'],
+                'plant_id'    => $user['plant_id'],
+                // Penanda "login baru" dipakai layout untuk menandai sessionStorage
+                // di browser/aplikasi. Lihat app/Views/layout/main.php.
+                'fresh_login' => true,
             ]);
             return redirect()->to('/dashboard');
         } else {

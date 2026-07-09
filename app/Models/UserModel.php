@@ -72,9 +72,15 @@ class UserModel extends Model
         return $row ?: null;
     }
 
+    // Catatan: TIDAK memfilter is_deleted di sini. Kolom `username` punya
+    // unique constraint di level database yang berlaku untuk SEMUA baris,
+    // termasuk user yang sudah di-soft-delete (forceHapus). Kalau cek ini
+    // hanya melihat user aktif, validasi bisa bilang "username tersedia"
+    // padahal insert-nya nanti akan gagal karena bentrok dengan username
+    // milik user yang sudah dihapus.
     public function usernameExists(string $username, ?int $excludeId = null): bool
     {
-        $builder = $this->db->table('users')->where('username', $username)->where('is_deleted', 0);
+        $builder = $this->db->table('users')->where('username', $username);
 
         if ($excludeId !== null) {
             $builder->where('id !=', $excludeId);

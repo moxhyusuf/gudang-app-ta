@@ -643,6 +643,8 @@ h1,h2,h3,h4,h5,h6 { font-family:var(--font); font-weight:700; color:var(--ink); 
 .rakpicker-expand-row{display:flex;gap:.4rem;margin-top:.4rem}
 .rakpicker-preview{margin-top:.4rem;font-size:.8rem;font-weight:700;color:var(--navy);background:#eef1fb;border-radius:6px;padding:.4rem .6rem}
 </style>
+<!-- Pengingat "ada data belum disimpan" — berlaku global di semua halaman & role -->
+<script src="/js/unsaved-guard.js"></script>
 </head>
 <body>
 

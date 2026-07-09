@@ -220,26 +220,41 @@ class Mapping extends BaseController
             if ($rak) {
                 $rakId = $rak['id'];
             } else {
-                $db->table('rak')->insert([
-                    'kode_rak'    => $kodeRak,
-                    'zona'        => $kategori['zona'] ?: strtok($kodeRak, '.'),
-                    'kategori_id' => $kategori['id'],
-                    'baris'       => $baris,
-                    'kolom'       => $kolom,
-                    'detail'      => $rakDetail !== '' ? $rakDetail : null,
-                ]);
-                $rakId = $db->insertID();
+                try {
+                    $db->table('rak')->insert([
+                        'kode_rak'    => $kodeRak,
+                        'zona'        => $kategori['zona'] ?: strtok($kodeRak, '.'),
+                        'kategori_id' => $kategori['id'],
+                        'baris'       => $baris,
+                        'kolom'       => $kolom,
+                        'detail'      => $rakDetail !== '' ? $rakDetail : null,
+                    ]);
+                    $rakId = $db->insertID();
+                } catch (\CodeIgniter\Database\Exceptions\DatabaseException $e) {
+                    // Kode rak ini baru saja dibuat oleh request lain di saat yang nyaris
+                    // bersamaan (race condition) — pakai baris yang sudah dibuat itu saja,
+                    // supaya tidak ada duplikat kode rak.
+                    $rak = $db->table('rak')->where('kode_rak', $kodeRak)->get()->getRowArray();
+                    if (!$rak) throw $e;
+                    $rakId = $rak['id'];
+                }
             }
         } elseif ($kodeRak !== '') {
             $rak = $db->table('rak')->where('kode_rak', $kodeRak)->get()->getRowArray();
             if ($rak) {
                 $rakId = $rak['id'];
             } else {
-                $db->table('rak')->insert([
-                    'kode_rak' => $kodeRak,
-                    'zona'     => strtok($kodeRak, '.'),
-                ]);
-                $rakId = $db->insertID();
+                try {
+                    $db->table('rak')->insert([
+                        'kode_rak' => $kodeRak,
+                        'zona'     => strtok($kodeRak, '.'),
+                    ]);
+                    $rakId = $db->insertID();
+                } catch (\CodeIgniter\Database\Exceptions\DatabaseException $e) {
+                    $rak = $db->table('rak')->where('kode_rak', $kodeRak)->get()->getRowArray();
+                    if (!$rak) throw $e;
+                    $rakId = $rak['id'];
+                }
             }
         }
 

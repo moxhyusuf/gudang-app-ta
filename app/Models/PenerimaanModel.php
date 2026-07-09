@@ -43,16 +43,25 @@ class PenerimaanModel
                 return $rak['id'];
             }
 
-            $db->table('rak')->insert([
-                'kode_rak'    => $kodeRak,
-                'zona'        => $kategori['zona'] ?: strtok($kodeRak, '.'),
-                'kategori_id' => $kategori['id'],
-                'baris'       => $baris,
-                'kolom'       => $kolom,
-                'detail'      => $detail !== '' ? $detail : null,
-                'is_active'   => 1,
-            ]);
-            return $db->insertID();
+            try {
+                $db->table('rak')->insert([
+                    'kode_rak'    => $kodeRak,
+                    'zona'        => $kategori['zona'] ?: strtok($kodeRak, '.'),
+                    'kategori_id' => $kategori['id'],
+                    'baris'       => $baris,
+                    'kolom'       => $kolom,
+                    'detail'      => $detail !== '' ? $detail : null,
+                    'is_active'   => 1,
+                ]);
+                return $db->insertID();
+            } catch (\CodeIgniter\Database\Exceptions\DatabaseException $e) {
+                // Kode rak ini baru saja dibuat oleh request lain di saat yang nyaris
+                // bersamaan (race condition) — pakai baris yang sudah dibuat itu saja,
+                // supaya tidak ada duplikat kode rak.
+                $rak = $db->table('rak')->where('kode_rak', $kodeRak)->get()->getRowArray();
+                if (!$rak) throw $e;
+                return $rak['id'];
+            }
         }
 
         if (!empty($item['kode_rak'])) {
@@ -60,12 +69,18 @@ class PenerimaanModel
             if ($rak) {
                 return $rak['id'];
             }
-            $db->table('rak')->insert([
-                'kode_rak'  => $item['kode_rak'],
-                'zona'      => strtok($item['kode_rak'], '.'),
-                'is_active' => 1,
-            ]);
-            return $db->insertID();
+            try {
+                $db->table('rak')->insert([
+                    'kode_rak'  => $item['kode_rak'],
+                    'zona'      => strtok($item['kode_rak'], '.'),
+                    'is_active' => 1,
+                ]);
+                return $db->insertID();
+            } catch (\CodeIgniter\Database\Exceptions\DatabaseException $e) {
+                $rak = $db->table('rak')->where('kode_rak', $item['kode_rak'])->get()->getRowArray();
+                if (!$rak) throw $e;
+                return $rak['id'];
+            }
         }
 
         return null;

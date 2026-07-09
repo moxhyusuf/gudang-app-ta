@@ -14,6 +14,7 @@
  */
 var RakPicker = (function () {
     var listCache = null;   // array kategori dari /rak-kategori/list
+    var listCacheBebas = null; // array rak lama/bebas (tanpa kategori) dari /rak-kategori/list
     var listPromise = null;
     var selectedMap = {};   // prefix -> {id, kode, maxBaris, maxKolom} | null
     var docClickBound = false;
@@ -46,6 +47,7 @@ var RakPicker = (function () {
             .then(function (r) { return r.json(); })
             .then(function (res) {
                 listCache = res.kategori || [];
+                listCacheBebas = res.rak_bebas || [];
                 return listCache;
             });
         return listPromise;
@@ -67,6 +69,9 @@ var RakPicker = (function () {
             + '.rak-ac-item{padding:.5rem .8rem;font-size:.83rem;cursor:pointer;color:#1f2937}'
             + '.rak-ac-item:hover,.rak-ac-item.active{background:#f0f2f8}'
             + '.rak-ac-item.rak-ac-new{color:var(--navy,#1e3a5f);font-weight:600;border-top:1px solid #eee}'
+            + '.rak-ac-item.rak-ac-bebas{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}'
+            + '.rak-ac-bebas-tag{font-size:.68rem;color:#9a6b00;background:#fff6df;border:1px solid #f2dfa6;'
+            + 'border-radius:5px;padding:.05rem .4rem}'
             + '.rak-ac-empty{padding:.5rem .8rem;font-size:.8rem;color:#9ca3af}'
             + '.rakpicker-hint-red{color:#ef4444;font-size:.7rem;margin-top:3px;display:none}'
             + '.rakpicker-hint-red.show{display:block}'
@@ -175,13 +180,53 @@ var RakPicker = (function () {
         }
         matches = matches.slice(0, 20);
 
+        // Rak lama/bebas (tanpa kategori, tanpa format baris/kolom) yang cocok
+        // dengan pencarian — tetap muncul di daftar saran supaya user tetap bisa
+        // menaruh material baru ke rak yang sudah ada ini (mis. zona R).
+        var allBebas = listCacheBebas || [];
+        var matchesBebas = allBebas.filter(function (r) { return r.kode_rak.toUpperCase().indexOf(q) === 0; });
+        if (!matchesBebas.length) {
+            matchesBebas = allBebas.filter(function (r) { return r.kode_rak.toUpperCase().indexOf(q) !== -1; });
+        }
+        matchesBebas = matchesBebas.slice(0, 20);
+
+        // Dari rak lama/bebas di atas, pisahkan mana yang formatnya sebenarnya
+        // sudah cocok dengan kategori yang ada (KODE_KATEGORI.BARIS.KOLOM,
+        // mis. "A.4.1.1" -> kategori "A.4" baris 1 kolom 1). Yang cocok
+        // ditampilkan seperti kategori biasa (tanpa label "rak lama"); yang
+        // benar-benar tidak berformat tetap ditandai "rak lama".
+        var bebasFormatted = [];
+        var bebasTrue = [];
+        matchesBebas.forEach(function (r) {
+            var parsed = parseBebasAsKategori(r.kode_rak);
+            if (parsed) {
+                bebasFormatted.push({ rak: r, parsed: parsed });
+            } else {
+                bebasTrue.push(r);
+            }
+        });
+
         var html = '';
         if (matches.length) {
             matches.forEach(function (k) {
                 html += '<div class="rak-ac-item" data-id="' + k.id + '" onclick="RakPicker._selectKat(\'' + prefix + '\',' + k.id + ')">' +
                     escHtml(k.kode_kategori) + '</div>';
             });
-        } else {
+        }
+        if (bebasFormatted.length) {
+            bebasFormatted.forEach(function (item) {
+                html += '<div class="rak-ac-item" data-id="' + item.rak.id + '" onclick="RakPicker._selectBebasFormatted(\'' + prefix + '\',' + item.rak.id + ')">' +
+                    escHtml(item.rak.kode_rak) + '</div>';
+            });
+        }
+        if (bebasTrue.length) {
+            bebasTrue.forEach(function (r) {
+                html += '<div class="rak-ac-item rak-ac-bebas" data-id="' + r.id + '" onclick="RakPicker._selectBebas(\'' + prefix + '\',' + r.id + ')">' +
+                    '<span>' + escHtml(r.kode_rak) + '</span>' +
+                    '<span class="rak-ac-bebas-tag">rak lama, tanpa baris/kolom</span></div>';
+            });
+        }
+        if (!matches.length && !matchesBebas.length) {
             html += '<div class="rak-ac-empty">Rak "' + escHtml(query) + '" tidak ditemukan.</div>';
         }
         html += '<div class="rak-ac-item rak-ac-new" onclick="RakPicker._openNewFromSearch(\'' + prefix + '\')">' +
@@ -238,6 +283,75 @@ var RakPicker = (function () {
         hideHint(prefix, 'baris');
         hideHint(prefix, 'kolom');
         _updatePreview(prefix);
+    }
+
+    // ── deteksi rak lama/bebas yang formatnya sebenarnya sudah "kategori.baris.kolom" ─
+    // Contoh: "A.4.1.1" -> kategori "A.4" (kalau memang ada di listCache) dengan
+    // baris=1, kolom=1. Kalau kategori "A.4" tidak ditemukan, berarti format ini
+    // bukan format kategori yang valid dan tetap dianggap rak lama/bebas biasa.
+    function parseBebasAsKategori(kodeRak) {
+        var m = String(kodeRak).match(/^(.*)\.(\d+)\.(\d+)(?:\((.*)\))?$/);
+        if (!m) return null;
+        var kodeKategori = m[1];
+        var found = (listCache || []).find(function (k) { return k.kode_kategori === kodeKategori; });
+        if (!found) return null;
+        return {
+            kategori: found,
+            baris: parseInt(m[2], 10),
+            kolom: parseInt(m[3], 10),
+            detail: m[4] || '',
+        };
+    }
+
+    // Pilih rak lama/bebas yang formatnya sudah cocok dengan kategori yang ada —
+    // langsung diperlakukan seperti memilih kategori tsb dengan baris/kolom
+    // otomatis terisi, tanpa keterangan "rak lama".
+    function selectBebasFormatted(prefix, id) {
+        var found = (listCacheBebas || []).find(function (r) { return String(r.id) === String(id); });
+        if (!found) return;
+        var parsed = parseBebasAsKategori(found.kode_rak);
+        if (!parsed) return; // jaga-jaga: kalau ternyata tidak cocok, jangan lakukan apa-apa
+
+        setSelected(prefix, parsed.kategori);
+        el(prefix, 'baris').value = parsed.baris;
+        el(prefix, 'kolom').value = parsed.kolom;
+        if (parsed.detail) el(prefix, 'detail').value = parsed.detail;
+        _updatePreview(prefix);
+
+        var listEl = document.getElementById(prefix + '-rak-katlist');
+        if (listEl) listEl.style.display = 'none';
+    }
+
+    // ── pilih rak lama/bebas (tanpa kategori, tanpa format baris/kolom) ─────
+    function selectBebas(prefix, id) {
+        var found = (listCacheBebas || []).find(function (r) { return String(r.id) === String(id); });
+        if (!found) return;
+        setSelectedBebas(prefix, found);
+        var listEl = document.getElementById(prefix + '-rak-katlist');
+        if (listEl) listEl.style.display = 'none';
+    }
+
+    function setSelectedBebas(prefix, rak) {
+        selectedMap[prefix] = {
+            id: null,
+            kode: rak.kode_rak,
+            maxBaris: null,
+            maxKolom: null,
+            isBebas: true,
+        };
+        el(prefix, 'katinput').value = rak.kode_rak;
+        el(prefix, 'katid').value = '';
+        _toggleNewBox(prefix, false);
+
+        document.getElementById(prefix + '-rak-liminfo').innerHTML =
+            'Rak <strong>' + escHtml(rak.kode_rak) + '</strong> adalah rak lama tanpa format baris/kolom. ' +
+            'Material akan disimpan langsung di rak ini.';
+
+        // Rak jenis ini sudah merupakan lokasi final, jadi kolom isian
+        // baris/kolom/detail tidak perlu ditampilkan.
+        document.getElementById(prefix + '-rak-fields').style.display = 'none';
+        hideHint(prefix, 'baris');
+        hideHint(prefix, 'kolom');
     }
 
     function openNewFromSearch(prefix) {
@@ -426,6 +540,18 @@ var RakPicker = (function () {
             return opts.required ? null : { kategori_id: null, kode_kategori: null, baris: null, kolom: null, detail: null, kode_rak: null };
         }
 
+        // Rak lama/bebas: kode rak sudah final, tidak ada baris/kolom untuk divalidasi.
+        if (sel.isBebas) {
+            return {
+                kategori_id:   null,
+                kode_kategori: null,
+                baris:         null,
+                kolom:         null,
+                detail:        null,
+                kode_rak:      sel.kode,
+            };
+        }
+
         var baris = parseInt(el(prefix, 'baris').value, 10);
         var kolom = parseInt(el(prefix, 'kolom').value, 10);
         var detail = el(prefix, 'detail').value.trim();
@@ -465,7 +591,12 @@ var RakPicker = (function () {
         if (!kodeRak) return;
         var m = String(kodeRak).match(/^(.*)\.(\d+)\.(\d+)(?:\((.*)\))?$/);
         loadList().then(function (list) {
-            if (!m) return;
+            if (!m) {
+                // Bukan format kategori.baris.kolom — coba cocokkan ke rak lama/bebas.
+                var bebas = (listCacheBebas || []).find(function (r) { return r.kode_rak === kodeRak; });
+                if (bebas) setSelectedBebas(prefix, bebas);
+                return;
+            }
             var kodeKategori = m[1];
             var found = list.find(function (k) { return k.kode_kategori === kodeKategori; });
             if (!found) return;
@@ -502,6 +633,8 @@ var RakPicker = (function () {
         _onKatInput: onKatInput,
         _onKatFocus: onKatFocus,
         _selectKat: selectKat,
+        _selectBebas: selectBebas,
+        _selectBebasFormatted: selectBebasFormatted,
         _openNewFromSearch: openNewFromSearch,
         _saveNewKategori: _saveNewKategori,
         _toggleNewBox: _toggleNewBox,

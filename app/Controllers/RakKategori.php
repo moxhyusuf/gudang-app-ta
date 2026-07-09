@@ -34,8 +34,17 @@ class RakKategori extends BaseController
         $model  = new RakKategoriModel();
         $search = $this->request->getGet('search') ?? '';
 
+        // Rak lama yang formatnya sudah sesuai "kategori.baris.kolom" otomatis
+        // dijadikan kategori resmi (kalau prefix-nya belum terdaftar) sebelum
+        // daftar kategori & rak bebas diambil, supaya dropdown langsung
+        // menampilkannya sebagai kategori ringkas, bukan satuan rak lama.
+        $model->promosikanRakLamaSesuaiFormat();
+
         return $this->response->setJSON([
-            'kategori' => $model->getAll($search),
+            'kategori'  => $model->getAll($search),
+            // Rak lama/bebas (tanpa kategori, tanpa format baris/kolom) — tetap
+            // ditampilkan di picker lokasi rak agar tidak hilang dari pilihan.
+            'rak_bebas' => $model->getRakBebas($search),
         ]);
     }
 

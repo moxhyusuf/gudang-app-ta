@@ -135,11 +135,15 @@ class RakModel
         $zona = trim($data['zona'] ?? '');
         if ($zona === '') $zona = strtok($kode, '.');
 
-        $this->db->table('rak')->where('id', $id)->update([
-            'kode_rak'   => $kode,
-            'zona'       => $zona,
-            'keterangan' => trim($data['keterangan'] ?? '') ?: null,
-        ]);
+        try {
+            $this->db->table('rak')->where('id', $id)->update([
+                'kode_rak'   => $kode,
+                'zona'       => $zona,
+                'keterangan' => trim($data['keterangan'] ?? '') ?: null,
+            ]);
+        } catch (\CodeIgniter\Database\Exceptions\DatabaseException $e) {
+            return ['success' => false, 'message' => 'Kode rak "' . $kode . '" sudah dipakai lokasi lain'];
+        }
 
         return ['success' => true, 'rak' => $this->find($id)];
     }

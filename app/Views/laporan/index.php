@@ -99,16 +99,16 @@ $kategori = $filter['kategori'] ?? '';
           <?php else: ?>
             <?php foreach ($penerimaan_list as $row): ?>
               <tr>
-                <td><code class="lap-code"><?= esc($row['no_surat_penerimaan']) ?></code></td>
-                <td><?= date('d/m/Y', strtotime($row['tanggal'])) ?></td>
-                <td><?= esc($row['vendor'] ?? '—') ?></td>
-                <td><?php
+                <td data-label="No. Surat"><code class="lap-code"><?= esc($row['no_surat_penerimaan']) ?></code></td>
+                <td data-label="Tanggal"><?= date('d/m/Y', strtotime($row['tanggal'])) ?></td>
+                <td data-label="Vendor"><?= esc($row['vendor'] ?? '—') ?></td>
+                <td data-label="Material"><?php
                   $items = !empty($row['detail_item']) ? explode('||', $row['detail_item']) : [];
                   if (empty($items)) { echo '<span class="lap-muted">—</span>'; }
                   else { echo '<ul class="lap-item-list">'; foreach ($items as $i) { echo '<li>' . esc($i) . '</li>'; } echo '</ul>'; }
                 ?></td>
-                <td><strong><?= number_format($row['total_unit']) ?> unit</strong></td>
-                <td><?= esc($row['petugas'] ?? '—') ?></td>
+                <td data-label="Total Unit"><strong><?= number_format($row['total_unit']) ?> unit</strong></td>
+                <td data-label="Petugas"><?= esc($row['petugas'] ?? '—') ?></td>
               </tr>
             <?php endforeach; ?>
           <?php endif; ?>
@@ -155,20 +155,20 @@ $kategori = $filter['kategori'] ?? '';
           <?php else: ?>
             <?php foreach ($pengeluaran_list as $row): ?>
               <tr>
-                <td><code class="lap-code"><?= esc($row['no_bon']) ?></code></td>
-                <td><?= date('d/m/Y', strtotime($row['tanggal'])) ?></td>
-                <td><?= esc($row['plant'] ?? '—') ?></td>
-                <td><?php
+                <td data-label="No. Bon"><code class="lap-code"><?= esc($row['no_bon']) ?></code></td>
+                <td data-label="Tanggal"><?= date('d/m/Y', strtotime($row['tanggal'])) ?></td>
+                <td data-label="Plant"><?= esc($row['plant'] ?? '—') ?></td>
+                <td data-label="Material"><?php
                   $items = !empty($row['detail_item']) ? explode('||', $row['detail_item']) : [];
                   if (empty($items)) { echo '<span class="lap-muted">—</span>'; }
                   else { echo '<ul class="lap-item-list">'; foreach ($items as $i) { echo '<li>' . esc($i) . '</li>'; } echo '</ul>'; }
                 ?></td>
-                <td><strong><?= number_format($row['total_unit']) ?> unit</strong></td>
-                <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+                <td data-label="Total Unit"><strong><?= number_format($row['total_unit']) ?> unit</strong></td>
+                <td data-label="Keperluan" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
                     title="<?= esc($row['keperluan'] ?? '') ?>">
                   <?= esc($row['keperluan'] ?? '—') ?>
                 </td>
-                <td><?= esc($row['petugas'] ?? '—') ?></td>
+                <td data-label="Petugas"><?= esc($row['petugas'] ?? '—') ?></td>
               </tr>
             <?php endforeach; ?>
           <?php endif; ?>
@@ -243,18 +243,18 @@ $kategori = $filter['kategori'] ?? '';
               $stInfo = $stMap[$st] ?? ['label' => ($st !== '' ? $row['status'] : '—'), 'cls' => 'lap-badge-blue'];
             ?>
               <tr>
-                <td><code class="lap-code"><?= esc($row['no_booking']) ?></code></td>
-                <td><?= date('d/m/Y', strtotime($row['tanggal'])) ?></td>
-                <td><?= esc($row['plant'] ?? '—') ?></td>
-                <td><?php
+                <td data-label="No. Booking"><code class="lap-code"><?= esc($row['no_booking']) ?></code></td>
+                <td data-label="Tanggal"><?= date('d/m/Y', strtotime($row['tanggal'])) ?></td>
+                <td data-label="Plant"><?= esc($row['plant'] ?? '—') ?></td>
+                <td data-label="Material"><?php
                   $items = !empty($row['detail_item']) ? explode('||', $row['detail_item']) : [];
                   if (empty($items)) { echo '<span class="lap-muted">—</span>'; }
                   else { echo '<ul class="lap-item-list">'; foreach ($items as $i) { echo '<li>' . esc($i) . '</li>'; } echo '</ul>'; }
                 ?></td>
-                <td><strong><?= number_format($row['total_unit']) ?> unit</strong></td>
-                <td><span class="lap-badge <?= $stInfo['cls'] ?>"><?= esc($stInfo['label']) ?></span></td>
-                <td><?= esc($row['pemohon'] ?? '—') ?></td>
-                <td><?= $keterangan === '—' ? '<span class="lap-muted">—</span>' : esc($keterangan) ?></td>
+                <td data-label="Total Unit"><strong><?= number_format($row['total_unit']) ?> unit</strong></td>
+                <td data-label="Status"><span class="lap-badge <?= $stInfo['cls'] ?>"><?= esc($stInfo['label']) ?></span></td>
+                <td data-label="Pemohon"><?= esc($row['pemohon'] ?? '—') ?></td>
+                <td data-label="Catatan / Alasan"><?= $keterangan === '—' ? '<span class="lap-muted">—</span>' : esc($keterangan) ?></td>
               </tr>
             <?php endforeach; ?>
           <?php endif; ?>
@@ -373,13 +373,13 @@ $kategori = $filter['kategori'] ?? '';
                         $current = $it['safety_stock_saat_ini'];
                       ?>
                         <tr>
-                          <td><code class="lap-code" style="font-size:.74rem"><?= esc($it['kode_sap'] ?? '—') ?></code></td>
-                          <td><?= esc($it['nama_material']) ?></td>
-                          <td><?= esc($it['kategori'] ?? '—') ?></td>
-                          <td><span class="lap-badge <?= $kls['cls'] ?>"><?= $kls['label'] ?></span></td>
-                          <td><?= number_format($it['qty']) ?> <?= esc($it['satuan']) ?></td>
-                          <td><?= $current !== null ? number_format($current) : '<span class="lap-muted">belum diset</span>' ?></td>
-                          <td><strong><?= number_format($it['safety_stock_usulan']) ?></strong> <?= esc($it['satuan']) ?></td>
+                          <td data-label="Kode SAP"><code class="lap-code" style="font-size:.74rem"><?= esc($it['kode_sap'] ?? '—') ?></code></td>
+                          <td data-label="Nama Material"><?= esc($it['nama_material']) ?></td>
+                          <td data-label="Kategori"><?= esc($it['kategori'] ?? '—') ?></td>
+                          <td data-label="Klasifikasi"><span class="lap-badge <?= $kls['cls'] ?>"><?= $kls['label'] ?></span></td>
+                          <td data-label="Qty Keluar"><?= number_format($it['qty']) ?> <?= esc($it['satuan']) ?></td>
+                          <td data-label="Safety Stock Saat Ini"><?= $current !== null ? number_format($current) : '<span class="lap-muted">belum diset</span>' ?></td>
+                          <td data-label="Usulan"><strong><?= number_format($it['safety_stock_usulan']) ?></strong> <?= esc($it['satuan']) ?></td>
                         </tr>
                       <?php endforeach; ?>
                     </tbody>
@@ -425,20 +425,20 @@ $kategori = $filter['kategori'] ?? '';
               $isKeluar = $r['jenis'] === 'keluar';
             ?>
               <tr data-material-id="<?= $r['material_id'] ?>">
-                <td><?= date('d/m/Y H:i', strtotime($r['tanggal_mutasi'])) ?></td>
-                <td><code class="lap-code" style="font-size:.74rem"><?= esc($r['kode_sap'] ?? '—') ?></code></td>
-                <td><strong><?= esc($r['nama_material']) ?></strong></td>
-                <td><?= esc($r['kategori'] ?? '—') ?></td>
-                <td><span class="lap-badge <?= $kls['cls'] ?>"><?= $kls['label'] ?></span></td>
-                <td><?= number_format($r['stok']) ?> <?= esc($r['satuan']) ?></td>
-                <td style="color:<?= $isKeluar ? '#CE2626' : '#1a7f4b' ?>;font-weight:500">
+                <td data-label="Tanggal Mutasi"><?= date('d/m/Y H:i', strtotime($r['tanggal_mutasi'])) ?></td>
+                <td data-label="Kode SAP"><code class="lap-code" style="font-size:.74rem"><?= esc($r['kode_sap'] ?? '—') ?></code></td>
+                <td data-label="Nama Material"><strong><?= esc($r['nama_material']) ?></strong></td>
+                <td data-label="Kategori"><?= esc($r['kategori'] ?? '—') ?></td>
+                <td data-label="Klasifikasi"><span class="lap-badge <?= $kls['cls'] ?>"><?= $kls['label'] ?></span></td>
+                <td data-label="Stok"><?= number_format($r['stok']) ?> <?= esc($r['satuan']) ?></td>
+                <td data-label="Keluar/Masuk" style="color:<?= $isKeluar ? '#CE2626' : '#1a7f4b' ?>;font-weight:500">
                   <?= $isKeluar ? '-' : '+' ?><?= number_format(abs($r['jumlah'])) ?> <?= esc($r['satuan']) ?>
                 </td>
-                <td><?= esc($r['plant'] ?? '—') ?></td>
-                <td><?= number_format($r['total_setahun']) ?> <?= esc($r['satuan']) ?></td>
-                <td class="cell-current"><?= $current !== null ? number_format($current) : '<span class="lap-muted">belum diset</span>' ?></td>
-                <td><strong><?= number_format($usulan) ?></strong> <?= esc($r['satuan']) ?></td>
-                <td class="cell-aksi">
+                <td data-label="Plant"><?= esc($r['plant'] ?? '—') ?></td>
+                <td data-label="Total Setahun"><?= number_format($r['total_setahun']) ?> <?= esc($r['satuan']) ?></td>
+                <td class="cell-current" data-label="Safety Stock Saat Ini"><?= $current !== null ? number_format($current) : '<span class="lap-muted">belum diset</span>' ?></td>
+                <td data-label="Usulan"><strong><?= number_format($usulan) ?></strong> <?= esc($r['satuan']) ?></td>
+                <td class="cell-aksi" data-label="Aksi">
                   <?php if ($beda): ?>
                     <button type="button" class="lap-btn-mini" onclick="terapkanSafetyStock(this, <?= $r['material_id'] ?>, <?= (int)$usulan ?>)">Terapkan</button>
                   <?php else: ?>
@@ -472,21 +472,21 @@ $kategori = $filter['kategori'] ?? '';
                 $tersedia = (int)$row['stok_tersedia'];
               ?>
                 <tr>
-                  <td><code class="lap-code" style="font-size:.74rem"><?= esc($row['kode_sap'] ?? '—') ?></code></td>
-                  <td><strong><?= esc($row['nama_material']) ?></strong></td>
-                  <td><?= esc($row['kategori'] ?? '—') ?></td>
-                  <td><?= number_format($row['stok']) ?> <?= esc($row['satuan'] ?? '') ?></td>
-                  <td style="color:#8d9ab5"><?= number_format($row['stok_booking']) ?></td>
-                  <td>
+                  <td data-label="Kode SAP"><code class="lap-code" style="font-size:.74rem"><?= esc($row['kode_sap'] ?? '—') ?></code></td>
+                  <td data-label="Nama Material"><strong><?= esc($row['nama_material']) ?></strong></td>
+                  <td data-label="Kategori"><?= esc($row['kategori'] ?? '—') ?></td>
+                  <td data-label="Stok"><?= number_format($row['stok']) ?> <?= esc($row['satuan'] ?? '') ?></td>
+                  <td data-label="Booking" style="color:#8d9ab5"><?= number_format($row['stok_booking']) ?></td>
+                  <td data-label="Tersedia">
                     <?php if ($tersedia <= 0): ?>
                       <span style="font-weight:700;color:#CE2626"><?= number_format($tersedia) ?></span>
                     <?php else: ?>
                       <span style="font-weight:700;color:#1a7f4b"><?= number_format($tersedia) ?></span>
                     <?php endif; ?>
                   </td>
-                  <td style="color:#1a7f4b;font-weight:500">+<?= number_format($row['total_masuk']) ?></td>
-                  <td style="color:#CE2626;font-weight:500">-<?= number_format($row['total_keluar']) ?></td>
-                  <td style="font-size:.78rem">
+                  <td data-label="Masuk" style="color:#1a7f4b;font-weight:500">+<?= number_format($row['total_masuk']) ?></td>
+                  <td data-label="Keluar" style="color:#CE2626;font-weight:500">-<?= number_format($row['total_keluar']) ?></td>
+                  <td data-label="Rak" style="font-size:.78rem">
                     <?= esc($row['kode_rak'] ?? '—') ?>
                     <?php if (!empty($row['zona'])): ?>
                       <span style="color:#8d9ab5">(<?= esc($row['zona']) ?>)</span>
@@ -823,14 +823,231 @@ $kategori = $filter['kategori'] ?? '';
 .lap-badge-gray   { background: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
 .lap-badge-gray::before   { background: #9ca3af; }
 
+/* ── Kotak pencarian & "muat lebih banyak" di atas tabel — ditambahkan via
+   JS (enhanceTableWithSearch), berguna di semua ukuran layar terutama utk
+   tabel dengan ribuan baris seperti Detail Stok per Material ── */
+.lap-tbl-search-bar {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  margin-bottom: .7rem;
+}
+.lap-tbl-search-box {
+  flex: 1;
+  max-width: 340px;
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  background: var(--surface-solid, #fff);
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  padding: 0 .8rem;
+  height: 38px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.lap-tbl-search-box:focus-within {
+  border-color: var(--navy);
+  box-shadow: 0 0 0 3px var(--navy-bg);
+}
+.lap-tbl-search-icon { font-size: .82rem; opacity: .55; flex-shrink: 0; }
+.lap-tbl-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: none;
+  font-size: .82rem;
+  font-family: var(--font);
+  color: var(--ink2);
+  min-width: 0;
+}
+.lap-tbl-search-count {
+  font-size: .72rem;
+  color: var(--ink4);
+  white-space: nowrap;
+}
+.lap-tbl-loadmore-wrap {
+  display: flex;
+  justify-content: center;
+  padding: .8rem 0 .1rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
-  .lap-stats-row  { grid-template-columns: 1fr; }
-  .lap-filter-row { flex-direction: column; align-items: stretch; }
-  .lap-filter-actions { padding-top: .4rem; flex-wrap: wrap; }
+  .lap-filter-card { padding: .9rem 1rem; }
+  .lap-filter-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .6rem .7rem;
+  }
+  .lap-filter-item { min-width: 0; flex: unset; }
+  .lap-input { height: 34px; padding: 0 .6rem; font-size: .78rem; }
+  .lap-filter-actions {
+    grid-column: 1 / -1;
+    padding-top: .3rem;
+    flex-wrap: wrap;
+  }
   .lap-tabs { overflow-x: auto; }
   .lap-tab  { flex: unset; font-size: .75rem; }
-  .lap-stat-val { font-size: 1.8rem; }
+
+  /* Kartu statistik: 3 kolom sempit & padat, bukan ditumpuk memanjang */
+  .lap-stats-row {
+    grid-template-columns: repeat(3, 1fr);
+    gap: .5rem;
+    margin-bottom: .9rem;
+  }
+  .lap-stat-card {
+    padding: .6rem .55rem;
+    border-radius: 10px;
+  }
+  .lap-stat-card:hover { transform: none; }
+  .lap-stat-card::after { display: none; } /* lingkaran dekoratif — buang di HP biar tidak makan tempat */
+  .lap-stat-card::before { height: 3px; }
+  .lap-stat-label {
+    font-size: .56rem;
+    letter-spacing: .03em;
+    margin-bottom: .25rem;
+    white-space: normal;
+    line-height: 1.15;
+  }
+  .lap-stat-val { font-size: 1.15rem; margin-bottom: .1rem; letter-spacing: -.5px; }
+  .lap-stat-sub { font-size: .58rem; line-height: 1.2; }
+
+  /* ── Tabel laporan → jadi kartu ringkas di HP ─────────────────────────
+     Prinsip: field pendek (tanggal, status, plant, angka dst) disusun
+     berdampingan 2 kolom via CSS Grid pada <tr>, field panjang (material,
+     nama, catatan, aksi, no. identitas) tetap full-width. Ini murni CSS —
+     markup <td data-label="..."> dan urutan sel TIDAK diubah sama sekali,
+     jadi tidak menyentuh logic export Excel/PDF yang membaca sel apa adanya. */
+  .lap-tbl-wrap { overflow-x: visible; }
+  .lap-tbl thead { display: none; }
+  .lap-tbl, .lap-tbl tbody { display: block; width: 100%; }
+  .lap-tbl tbody { padding: .6rem; }
+  .lap-tbl tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 .7rem;
+    background: var(--surface-solid, #fff);
+    border: 1px solid var(--border, #eef1f6);
+    border-radius: 12px;
+    padding: .75rem .85rem;
+    margin-bottom: .55rem;
+  }
+  .lap-tbl tbody tr:nth-child(even) td { background: transparent; }
+  .lap-tbl tr:last-child { margin-bottom: 0; }
+  .lap-tbl td {
+    display: block;
+    grid-column: span 1;
+    padding: .3rem 0 !important;
+    border-bottom: none !important;
+    text-align: left;
+    font-size: .78rem;
+    min-width: 0;
+  }
+  .lap-tbl tr:hover td { background: transparent; }
+  .lap-tbl td::before {
+    content: attr(data-label);
+    display: block;
+    font-weight: 700;
+    color: var(--ink4, #9199a8);
+    font-size: .58rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 1px;
+  }
+  /* Kolom identitas (No. Surat/Bon/Booking, Kode SAP) jadi judul kartu:
+     full-width, di baris paling atas, dengan garis pemisah */
+  .lap-tbl td[data-label^="No."],
+  .lap-tbl td[data-label="Kode SAP"] {
+    grid-column: 1 / -1;
+    padding-bottom: .5rem !important;
+    margin-bottom: .35rem;
+    border-bottom: 1px solid #f0ece2 !important;
+  }
+  /* Field yang isinya panjang / perlu ruang penuh → full-width, bukan grid 2 kolom */
+  .lap-tbl td[data-label="Material"],
+  .lap-tbl td[data-label="Nama Material"],
+  .lap-tbl td[data-label="Catatan / Alasan"],
+  .lap-tbl td[data-label="Keperluan"],
+  .lap-tbl td[data-label="Aksi"] {
+    grid-column: 1 / -1;
+  }
+  .lap-tbl td[data-label="Material"] .lap-item-list,
+  .lap-tbl td[data-label="Nama Material"] .lap-item-list { width: 100%; }
+  .lap-tbl td[data-label="Keperluan"] {
+    max-width: none !important;
+    white-space: normal !important;
+    overflow: visible !important;
+  }
+  .lap-tbl td[data-label="Aksi"] { padding-top: .5rem !important; }
+  .lap-tbl td.lap-empty {
+    grid-column: 1 / -1;
+    display: block;
+    text-align: center;
+    border: none !important;
+  }
+  .lap-tbl td.lap-empty::before { content: none; }
+  .lap-item-list { gap: 1px; }
+  .lap-item-list li { font-size: .72rem; padding: 0; }
+
+  /* ── Kotak pencarian & "muat lebih banyak" (ditambahkan via JS, lihat
+     enhanceTableWithSearch) — dibuat kompak, senada dengan .lap-input ── */
+  .lap-tbl-search-bar {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin-bottom: .6rem;
+  }
+  .lap-tbl-search-box {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 9px;
+    padding: 0 .7rem;
+    height: 36px;
+  }
+  .lap-tbl-search-box:focus-within {
+    border-color: var(--navy);
+    box-shadow: 0 0 0 3px var(--navy-bg);
+  }
+  .lap-tbl-search-icon { font-size: .8rem; opacity: .6; flex-shrink: 0; }
+  .lap-tbl-search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: none;
+    font-size: .8rem;
+    font-family: var(--font);
+    color: var(--ink2);
+    min-width: 0;
+  }
+  .lap-tbl-search-count {
+    font-size: .68rem;
+    color: var(--ink4);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .lap-tbl-loadmore-wrap {
+    display: flex;
+    justify-content: center;
+    padding: .7rem 0 .2rem;
+  }
+  .lap-tbl-loadmore-btn {
+    width: 100%;
+    max-width: 280px;
+  }
+}
+
+@media (max-width: 420px) {
+  .lap-filter-row { grid-template-columns: 1fr; }
+
+  /* Layar sangat sempit: label kartu makin ringkas biar tidak wrap berlebihan */
+  .lap-stat-card { padding: .5rem .45rem; }
+  .lap-stat-label { font-size: .52rem; }
+  .lap-stat-val { font-size: 1.05rem; }
+  .lap-stat-sub { display: none; } /* teks penjelas disembunyikan, label sudah cukup jelas */
 }
 
 /* Item list */
@@ -1065,6 +1282,33 @@ $kategori = $filter['kategori'] ?? '';
 }
 .lap-kls-dot:hover   { background: var(--clay); }
 .lap-kls-dot.active  { background: var(--navy); transform: scale(1.3); }
+
+@media (max-width: 768px) {
+  .lap-chart-card { padding: 1rem .9rem; }
+  .lap-legend { gap: .35rem .6rem; }
+  .lap-legend-item { font-size: .68rem; }
+
+  .lap-kls-toolbar { flex-direction: column; align-items: stretch; gap: .5rem; }
+
+  .lap-kls-nav { flex-wrap: wrap; gap: .4rem; }
+  .lap-kls-select {
+    order: -1;
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+  }
+  #klsPrev, #klsNext {
+    flex: 1 1 calc(50% - .2rem);
+    white-space: nowrap;
+    font-size: .68rem;
+    padding: 0 .4rem;
+  }
+
+  .lap-kls-export { flex-direction: column; align-items: stretch; gap: .4rem; }
+  .lap-select-tahun { width: 100%; }
+  #klsToggleTblBtn { width: 100%; }
+  .lap-kls-export .lap-btn { width: 100%; justify-content: center; }
+}
 </style>
 
 <!-- ── Scripts ─────────────────────────────────────────────────────────────── -->
@@ -1073,6 +1317,12 @@ $kategori = $filter['kategori'] ?? '';
 <script>
 var _currentTab = 'penerimaan';
 var _stokChartsReady = false;
+
+// Chart.js: kecilkan ukuran font tick di layar sempit (HP) biar label
+// nama material yang panjang nggak kepotong/numpuk di sumbu Y.
+if (typeof Chart !== 'undefined') {
+  Chart.defaults.font.size = window.innerWidth <= 480 ? 9 : (window.innerWidth <= 768 ? 10 : 12);
+}
 
 function switchTab(tab, btn) {
   document.querySelectorAll('.lap-panel').forEach(function(p) {
@@ -1802,6 +2052,98 @@ function exportPDF() {
   doc.close();
   setTimeout(function() { iframe.contentWindow.focus(); iframe.contentWindow.print(); }, 400);
 }
+
+// ── Pencarian & "muat lebih banyak" per tabel ──────────────────────────────
+// Murni tampilan: hanya menyembunyikan/menampilkan <tr> yang SUDAH ADA lewat
+// style.display. Tidak memindah, menghapus, atau mengubah isi <td> sama
+// sekali — jadi tombol Terapkan, export Excel/PDF, dsb tetap berjalan persis
+// seperti sebelumnya (export selalu membaca seluruh baris dari DOM, terlepas
+// dari yang sedang disembunyikan pencarian/pagination di layar).
+function enhanceTableWithSearch(tbodyId, opts) {
+  opts = opts || {};
+  var tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  var table = tbody.closest('table');
+  var wrap  = table ? table.closest('.lap-tbl-wrap') : null;
+  if (!wrap || !wrap.parentElement) return;
+
+  var allRows = Array.prototype.slice.call(tbody.querySelectorAll(':scope > tr')).filter(function(tr) {
+    return !tr.querySelector('.lap-empty'); // baris "tidak ada data" dilewati, tidak perlu search bar
+  });
+  if (!allRows.length) return;
+
+  var pageSize = opts.pageSize || null;
+  var visibleLimit = pageSize || allRows.length;
+
+  var bar = document.createElement('div');
+  bar.className = 'lap-tbl-search-bar';
+  bar.innerHTML =
+    '<div class="lap-tbl-search-box">' +
+      '<span class="lap-tbl-search-icon">🔍</span>' +
+      '<input type="text" class="lap-tbl-search-input" placeholder="' + (opts.placeholder || 'Cari...') + '">' +
+    '</div>' +
+    '<span class="lap-tbl-search-count"></span>';
+  wrap.parentElement.insertBefore(bar, wrap);
+
+  var loadMoreWrap = null, loadMoreBtn = null;
+  if (pageSize) {
+    loadMoreWrap = document.createElement('div');
+    loadMoreWrap.className = 'lap-tbl-loadmore-wrap';
+    loadMoreWrap.innerHTML = '<button type="button" class="lap-btn-mini lap-tbl-loadmore-btn">Muat lagi ▾</button>';
+    if (wrap.nextSibling) { wrap.parentElement.insertBefore(loadMoreWrap, wrap.nextSibling); }
+    else { wrap.parentElement.appendChild(loadMoreWrap); }
+    loadMoreBtn = loadMoreWrap.querySelector('.lap-tbl-loadmore-btn');
+  }
+
+  var input   = bar.querySelector('.lap-tbl-search-input');
+  var countEl = bar.querySelector('.lap-tbl-search-count');
+
+  function apply() {
+    var q = input.value.trim().toLowerCase();
+    var matched = q ? allRows.filter(function(tr) { return tr.textContent.toLowerCase().indexOf(q) !== -1; }) : allRows;
+
+    allRows.forEach(function(tr) { tr.style.display = 'none'; });
+
+    var showCount = pageSize ? Math.min(visibleLimit, matched.length) : matched.length;
+    for (var i = 0; i < showCount; i++) { matched[i].style.display = ''; }
+
+    countEl.textContent = q
+      ? ('Ditemukan ' + matched.length + ' dari ' + allRows.length + ' data')
+      : (allRows.length.toLocaleString('id-ID') + ' data');
+
+    if (loadMoreBtn) {
+      var sisa = matched.length - showCount;
+      if (sisa > 0) {
+        loadMoreBtn.style.display = '';
+        loadMoreBtn.textContent = 'Muat ' + Math.min(pageSize, sisa) + ' lagi ▾  (' + showCount + ' / ' + matched.length + ')';
+      } else {
+        loadMoreBtn.style.display = 'none';
+      }
+    }
+  }
+
+  input.addEventListener('input', function() {
+    visibleLimit = pageSize || allRows.length;
+    apply();
+  });
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', function() {
+      visibleLimit += pageSize;
+      apply();
+    });
+  }
+
+  apply();
+}
+
+// Aktifkan pencarian di semua tabel laporan. Tabel "Detail Stok per Material"
+// bisa berisi ribuan baris, jadi dipasangi pageSize (muat bertahap 40 baris)
+// selain pencarian, biar tidak sekaligus me-render/scroll 4000+ card.
+enhanceTableWithSearch('tbody-penerimaan', { placeholder: 'Cari no. surat, vendor, material...' });
+enhanceTableWithSearch('tbody-pengeluaran', { placeholder: 'Cari no. bon, plant, material...' });
+enhanceTableWithSearch('tbody-booking', { placeholder: 'Cari no. booking, plant, pemohon...' });
+enhanceTableWithSearch('tbody-safety-stock', { placeholder: 'Cari kode SAP, nama material, plant...', pageSize: 40 });
+enhanceTableWithSearch('tbody-stok-detail', { placeholder: 'Cari kode SAP, nama material, rak...', pageSize: 40 });
 
 // Aktifkan tab dari URL param
 (function() {

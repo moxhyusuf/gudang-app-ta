@@ -26,6 +26,122 @@ class RakKategoriModel
         return $this->db->table('rak_kategori')->where('id', $id)->get()->getRowArray();
     }
 
+    // ── Auto-kategorisasi rak lama yang formatnya SUDAH sesuai ──────────────────
+    // Rak lama (kategori_id NULL) yang kode-nya berformat "PREFIX.BARIS.KOLOM"
+    // (mis. "A.4.1.1", "A.4.1.2", "A.4.2.1") tapi PREFIX-nya ("A.4") belum
+    // terdaftar sebagai kategori resmi, dikelompokkan per PREFIX lalu dijadikan
+    // kategori resmi baru — batas baris & kolomnya diambil PERSIS dari nilai
+    // baris/kolom terbesar yang sudah pernah dipakai di kelompok itu. Rak yang
+    // kode-nya memang tidak berformat (mis. "R-2", "RAK PLAT") tidak disentuh,
+    // tetap tampil sebagai rak lama/bebas biasa.
+    //
+    // Idempoten & aman dipanggil berkali-kali: begitu suatu PREFIX sudah resmi
+    // (kategori_id ter-update), rak-rak tsb otomatis tidak lagi masuk hitungan
+    // di pemanggilan berikutnya karena query dasarnya sudah mensyaratkan
+    // kategori_id IS NULL.
+    public function promosikanRakLamaSesuaiFormat()
+    {
+        $rows = $this->db->query("
+            SELECT id, kode_rak FROM rak WHERE is_active = 1 AND kategori_id IS NULL
+        ")->getResultArray();
+
+        if (!$rows) return;
+
+        $daftarKategori   = $this->db->table('rak_kategori')->select('kode_kategori')->where('is_active', 1)->get()->getResultArray();
+        $kodeKategoriList = array_map(function ($k) { return $k['kode_kategori']; }, $daftarKategori);
+
+        // Kelompokkan per PREFIX kategori yang tersirat dari format kode_rak-nya.
+        $groups = [];
+        foreach ($rows as $r) {
+            if (!preg_match('/^(.+)\.(\d+)\.(\d+).*$/', $r['kode_rak'], $m)) continue;
+
+            $prefix = $m[1];
+            if (in_array($prefix, $kodeKategoriList, true)) continue; // sudah kategori resmi, biar ditangani jalur lain
+
+            $baris = max(1, (int)$m[2]);
+            $kolom = max(1, (int)$m[3]);
+
+            if (!isset($groups[$prefix])) {
+                $groups[$prefix] = ['ids' => [], 'max_baris' => $baris, 'max_kolom' => $kolom];
+            }
+            $groups[$prefix]['ids'][]    = $r['id'];
+            $groups[$prefix]['max_baris'] = max($groups[$prefix]['max_baris'], $baris);
+            $groups[$prefix]['max_kolom'] = max($groups[$prefix]['max_kolom'], $kolom);
+        }
+
+        foreach ($groups as $prefix => $g) {
+            $existing = $this->findByKode($prefix);
+            if ($existing) {
+                $kategoriId = $existing['id'];
+                // Kalau kategori ini ternyata sudah ada tapi batasnya lebih kecil
+                // dari yang sebenarnya sudah dipakai rak lama, ikut diperbesar.
+                if ((int)$existing['max_baris'] < $g['max_baris'] || (int)$existing['max_kolom'] < $g['max_kolom']) {
+                    $this->db->table('rak_kategori')->where('id', $kategoriId)->update([
+                        'max_baris'  => max((int)$existing['max_baris'], $g['max_baris']),
+                        'max_kolom'  => max((int)$existing['max_kolom'], $g['max_kolom']),
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
+            } else {
+                $this->db->table('rak_kategori')->insert([
+                    'kode_kategori' => $prefix,
+                    'zona'          => strtok($prefix, '.'),
+                    'max_baris'     => $g['max_baris'],
+                    'max_kolom'     => $g['max_kolom'],
+                    'keterangan'    => 'Otomatis terkategorikan dari rak lama',
+                    'is_active'     => 1,
+                    'created_at'    => date('Y-m-d H:i:s'),
+                    'updated_at'    => date('Y-m-d H:i:s'),
+                ]);
+                $kategoriId = $this->db->insertID();
+            }
+
+            $this->db->table('rak')->whereIn('id', $g['ids'])->update(['kategori_id' => $kategoriId]);
+        }
+    }
+
+    // ── Rak lama/bebas: lokasi rak yang SUDAH ADA di tabel `rak` tapi TIDAK
+    // terikat kategori (kategori_id kosong), jadi tidak wajib ikut format
+    // baris/kolom. Contoh: rak-rak di zona R yang sudah terisi material sejak
+    // awal. Tetap ditampilkan di picker lokasi rak supaya user bisa memilih
+    // rak ini langsung, tanpa mengubah alur kategori yang sudah ada. ───────────
+    public function getRakBebas($search = '')
+    {
+        // ── Daftar kode kategori aktif, dipakai sebagai referensi "sudah punya kategori" ──
+        $daftarKategori   = $this->db->table('rak_kategori')->select('kode_kategori')->where('is_active', 1)->get()->getResultArray();
+        $kodeKategoriList = array_map(function ($k) { return $k['kode_kategori']; }, $daftarKategori);
+
+        $where = "r.is_active = 1 AND r.kategori_id IS NULL";
+        $binds = [];
+        if ($search !== '') {
+            $where .= " AND r.kode_rak LIKE ?";
+            $binds[] = '%' . $search . '%';
+        }
+
+        $rows = $this->db->query("
+            SELECT r.id, r.kode_rak, r.zona
+            FROM rak r
+            WHERE {$where}
+            ORDER BY r.kode_rak ASC
+        ", $binds)->getResultArray();
+
+        // Buang rak yang kode-nya sebenarnya "milik" kategori yang sudah ada — dicek
+        // dari data kategori aktif sungguhan, bukan cuma nebak dari pola teks. Data lama
+        // ternyata dipakai dengan format akhiran yang macam-macam (mis. "K.34.2.4 (kotak)",
+        // "L.44.1.1 Ki", "L.44.1.2 Ka"), jadi kalau kode rak diawali "KODE_KATEGORI." lalu
+        // angka baris, berarti itu sebenarnya cell dari kategori itu juga — tidak perlu
+        // ditampilkan dobel sebagai "rak bebas". Rak yang memang tanpa kategori sama
+        // sekali (mis. "R-2", "L-Prob", "RAK PLAT") tetap muncul seperti biasa.
+        return array_values(array_filter($rows, function ($r) use ($kodeKategoriList) {
+            foreach ($kodeKategoriList as $kode) {
+                if (preg_match('/^' . preg_quote($kode, '/') . '\.\d/', $r['kode_rak'])) {
+                    return false;
+                }
+            }
+            return true;
+        }));
+    }
+
     public function findByKode($kode)
     {
         return $this->db->table('rak_kategori')

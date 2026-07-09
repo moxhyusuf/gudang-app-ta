@@ -11,7 +11,7 @@
   </div>
 </div>
 
-<div class="card-g mb-3">
+<div class="card-g mb-3" id="card-tambah-kategori-rak">
   <div class="card-header-g">➕ Tambah Kategori Rak</div>
   <div class="card-body-g">
     <div class="form-grid-2-sm">
@@ -167,6 +167,10 @@
 </style>
 
 <script>
+UnsavedGuard.watch('#card-tambah-kategori-rak', 'Data kategori rak baru yang sedang diisi belum disimpan. Yakin ingin pindah halaman?');
+UnsavedGuard.watch('#import-box', 'Data import massal yang sedang diisi belum diproses. Yakin ingin pindah halaman?');
+UnsavedGuard.watch('#modal-edit-kat', 'Ada perubahan kategori rak yang belum disimpan. Yakin ingin pindah halaman?');
+
 function tambahKategori() {
     var kode  = document.getElementById('new-kode').value.trim();
     var baris = parseInt(document.getElementById('new-baris').value, 10);
@@ -185,6 +189,7 @@ function tambahKategori() {
     .then(r => r.json())
     .then(res => {
         if (!res.success) { alert(res.message || 'Gagal menyimpan'); return; }
+        UnsavedGuard.markClean();
         location.reload();
     })
     .catch(() => alert('Gagal menghubungi server.'));
@@ -222,6 +227,7 @@ function editKategori(id, kode, baris, kolom, ket) {
 
 function closeEditKategori() {
     document.getElementById('modal-edit-kat').style.display = 'none';
+    UnsavedGuard.markClean();
 }
 
 function saveEditKategori() {
@@ -243,6 +249,7 @@ function saveEditKategori() {
     .then(r => r.json())
     .then(res => {
         if (!res.success) { showEkError(res.message || 'Gagal menyimpan'); return; }
+        UnsavedGuard.markClean();
         location.reload();
     })
     .catch(() => showEkError('Gagal menghubungi server.'));
@@ -292,6 +299,7 @@ function importKategori() {
                 res.gagal.map(function(g){ return '<li>' + g + '</li>'; }).join('') + '</ul></div>';
         }
         box.innerHTML = html;
+        UnsavedGuard.markClean();
         setTimeout(function(){ location.reload(); }, 1200);
     })
     .catch(() => { document.getElementById('import-result').innerHTML = '<span style="color:var(--clay)">Gagal menghubungi server.</span>'; });

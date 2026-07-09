@@ -70,18 +70,18 @@
         <?php else: ?>
         <?php foreach ($users as $i => $u): ?>
         <tr id="row-<?= $u['id'] ?>">
-          <td style="color:#9ca3af;font-size:.8rem"><?= $i + 1 + (($page - 1) * 15) ?></td>
-          <td><strong style="color:#1f2937"><?= esc($u['nama']) ?></strong></td>
-          <td><code class="username-code"><?= esc($u['username']) ?></code></td>
-          <td><?= roleBadge($u['role']) ?></td>
-          <td><?= $u['nama_plant'] ? esc($u['nama_plant']) : '<span style="color:#9ca3af">—</span>' ?></td>
-          <td>
+          <td data-label="#" style="color:#9ca3af;font-size:.8rem"><?= $i + 1 + (($page - 1) * 15) ?></td>
+          <td data-label="Nama"><strong style="color:#1f2937"><?= esc($u['nama']) ?></strong></td>
+          <td data-label="Username"><code class="username-code"><?= esc($u['username']) ?></code></td>
+          <td data-label="Role"><?= roleBadge($u['role']) ?></td>
+          <td data-label="Plant"><?= $u['nama_plant'] ? esc($u['nama_plant']) : '<span style="color:#9ca3af">—</span>' ?></td>
+          <td data-label="Status">
             <span id="status-<?= $u['id'] ?>" class="status-chip <?= $u['is_active'] ? 'chip-aktif' : 'chip-nonaktif' ?>">
               <?= $u['is_active'] ? 'Aktif' : 'Nonaktif' ?>
             </span>
           </td>
-          <td style="font-size:.8rem;color:#6b7280"><?= date('d/m/Y', strtotime($u['created_at'])) ?></td>
-          <td style="text-align:center">
+          <td data-label="Tgl Dibuat" style="font-size:.8rem;color:#6b7280"><?= date('d/m/Y', strtotime($u['created_at'])) ?></td>
+          <td data-label="Aksi" style="text-align:center">
             <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
               <button class="btn-g btn-navy-g btn-sm-g" onclick="openEdit(<?= $u['id'] ?>)">✏️ Edit</button>
               <button class="btn-g btn-sm-g <?= $u['is_active'] ? 'btn-warn-g' : 'btn-ok-g' ?>"
@@ -206,6 +206,12 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
           </span>
         </div>
+        <button type="button" class="btn-plant-baru" onclick="toggleNewPlant('t')">＋ Tambah Plant Baru</button>
+        <div id="t-plant-new-wrap" class="plant-new-wrap" style="display:none">
+          <input type="text" id="t-plant-new-nama" class="modal-input" placeholder="Nama plant baru">
+          <button type="button" class="btn-g btn-navy-g btn-sm-g" onclick="simpanPlantBaru('t')">Simpan</button>
+          <button type="button" class="btn-g btn-out-g btn-sm-g" onclick="toggleNewPlant('t')">Batal</button>
+        </div>
       </div>
 
       <div id="t-error" class="alert-error" style="display:none"></div>
@@ -263,19 +269,6 @@
         </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label-gt">Password Baru <span class="badge-optional">Opsional</span></label>
-        <div class="modal-input-wrap">
-          <span class="modal-field-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          </span>
-          <input type="password" id="e-password" class="modal-input modal-input-pw" placeholder="Kosongkan jika tidak diubah" autocomplete="new-password">
-          <button type="button" class="pw-toggle" onclick="togglePw('e-password',this)" title="Tampilkan password">
-            <svg class="eye-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
-        </div>
-        <span class="form-hint">Biarkan kosong jika tidak ingin mengubah password</span>
-      </div>
 
       <div class="form-group">
         <label class="form-label-gt">Role <span class="required-dot">*</span></label>
@@ -309,6 +302,12 @@
           <span class="modal-select-arrow">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
           </span>
+        </div>
+        <button type="button" class="btn-plant-baru" onclick="toggleNewPlant('e')">＋ Tambah Plant Baru</button>
+        <div id="e-plant-new-wrap" class="plant-new-wrap" style="display:none">
+          <input type="text" id="e-plant-new-nama" class="modal-input" placeholder="Nama plant baru">
+          <button type="button" class="btn-g btn-navy-g btn-sm-g" onclick="simpanPlantBaru('e')">Simpan</button>
+          <button type="button" class="btn-g btn-out-g btn-sm-g" onclick="toggleNewPlant('e')">Batal</button>
         </div>
       </div>
 
@@ -908,6 +907,20 @@
 .mb-3 { margin-bottom:1rem; }
 .mt-3 { margin-top:1rem; }
 
+/* ── Tambah Plant Baru (inline, di form Tambah/Edit User) ─────────────── */
+.btn-plant-baru {
+  background:none; border:none; padding:0; margin-top:.4rem;
+  color:var(--navy, #1e3a5f); font-size:.78rem; font-weight:700;
+  cursor:pointer; text-decoration:underline;
+}
+.plant-new-wrap {
+  display:flex; gap:.4rem; margin-top:.5rem; align-items:center; flex-wrap:wrap;
+}
+.plant-new-wrap .modal-input {
+  flex:1; min-width:140px; padding:.5rem .7rem; border:1px solid #e5e7eb;
+  border-radius:8px; font-size:.82rem;
+}
+
 /* ============================================================
    RESPONSIVE — HP (desktop/laptop tidak berubah)
    ============================================================ */
@@ -917,20 +930,80 @@
   .filter-field input, .filter-field select, .filter-field .form-control-gt, .filter-field .form-select-gt, .filter-bar .select-wrap { width:100%; min-width:0 !important; }
   .modal-box { max-width:100% !important; width:100% !important; margin:0 8px; }
   .modal-body-gt, .modal-body { padding:.9rem !important; }
-  .tbl-g th, .tbl-g td { padding:.5rem .6rem; font-size:.78rem; }
+
+  /* ── Tabel User → jadi kartu di layar HP, biar tidak perlu scroll ke samping ── */
+  .tbl-wrap { overflow-x:visible; }
+  .tbl-g { border:none; }
+  .tbl-g thead { display:none; }
+  .tbl-g, .tbl-g tbody, .tbl-g tr, .tbl-g td { display:block; width:100%; }
+  .tbl-g tbody { padding:.7rem .7rem 0; }
+  .tbl-g tr {
+    background:#fff;
+    border:1px solid #eef1f6;
+    border-radius:14px;
+    padding:.9rem 1rem;
+    margin-bottom:.7rem;
+    box-shadow:0 1px 4px rgba(15,32,68,.05);
+  }
+  .tbl-g tr:last-child { margin-bottom:0; }
+  .tbl-g td {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:.75rem;
+    padding:.42rem 0;
+    border:none !important;
+    font-size:.82rem;
+    text-align:right;
+  }
+  .tbl-g td::before {
+    content:attr(data-label);
+    font-weight:700;
+    color:#9199a8;
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    text-align:left;
+    flex-shrink:0;
+  }
+  /* Nomor urut tidak perlu ditampilkan di kartu HP */
+  .tbl-g td[data-label="#"] { display:none; }
+  /* Nama jadi judul kartu */
+  .tbl-g td[data-label="Nama"] {
+    padding:0 0 .55rem;
+    margin-bottom:.4rem;
+    border-bottom:1px solid #f1f5f9 !important;
+    font-size:.95rem;
+  }
+  .tbl-g td[data-label="Nama"]::before { display:none; }
+  /* Tombol aksi jadi footer kartu, full width & rapi wrap */
+  .tbl-g td[data-label="Aksi"] {
+    padding:.6rem 0 0;
+    margin-top:.3rem;
+    border-top:1px solid #f1f5f9 !important;
+    justify-content:flex-start;
+  }
+  .tbl-g td[data-label="Aksi"]::before { display:none; }
+  .tbl-g td[data-label="Aksi"] > div { justify-content:flex-start !important; width:100%; }
+  .tbl-g td[data-label="Aksi"] .btn-sm-g { flex:1 1 auto; justify-content:center; }
+  .tbl-g td.tbl-empty { display:block; text-align:center; }
+  .tbl-empty { padding:1.6rem 1rem; }
 }
 </style>
 
 
 <script>
 // ── Modal helpers ──────────────────────────────────────────────────────────────
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; UnsavedGuard.markClean(); }
 function openModal(id)  { document.getElementById(id).style.display = 'flex'; }
+
+UnsavedGuard.watch('#modal-tambah', 'Data user baru yang sedang diisi belum disimpan. Yakin ingin pindah halaman?');
+UnsavedGuard.watch('#modal-edit', 'Ada perubahan data user yang belum disimpan. Yakin ingin pindah halaman?');
 
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.modal-overlay').forEach(function(el) {
     el.addEventListener('click', function(e) {
-      if (e.target === this) this.style.display = 'none';
+      if (e.target === this) closeModal(this.id);
     });
   });
 });
@@ -966,6 +1039,51 @@ function handleRoleChange(wrapId, val) {
   document.getElementById(wrapId).style.display = val === 'plant' ? 'flex' : 'none';
 }
 
+// ── Tambah Plant Baru (inline dari form Tambah/Edit User) ──────────────────────
+function toggleNewPlant(prefix) {
+  var wrap = document.getElementById(prefix + '-plant-new-wrap');
+  var show = wrap.style.display === 'none';
+  wrap.style.display = show ? 'flex' : 'none';
+  if (show) {
+    document.getElementById(prefix + '-plant-new-nama').value = '';
+    document.getElementById(prefix + '-plant-new-nama').focus();
+  }
+}
+
+function simpanPlantBaru(prefix) {
+  var inp    = document.getElementById(prefix + '-plant-new-nama');
+  var nama   = inp.value.trim();
+  if (!nama) { inp.focus(); return; }
+
+  fetch('/user/tambah-plant', {
+    method: 'POST',
+    body: new URLSearchParams({ nama_plant: nama })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if (!data.success) { showToast(data.message, false); return; }
+
+    // Tambahkan opsi baru ke KEDUA dropdown (Tambah User & Edit User)
+    // supaya plant baru langsung tersedia tanpa reload halaman.
+    ['t-plant', 'e-plant'].forEach(function(selId){
+      var sel = document.getElementById(selId);
+      var opt = document.createElement('option');
+      opt.value = data.data.id;
+      opt.textContent = data.data.nama_plant;
+      sel.appendChild(opt);
+    });
+
+    // Pilih otomatis plant yang baru dibuat di dropdown yang sedang dipakai
+    document.getElementById(prefix + '-plant').value = data.data.id;
+
+    toggleNewPlant(prefix);
+    showToast(data.message);
+  })
+  .catch(function(){
+    showToast('Gagal menambah plant. Coba lagi.', false);
+  });
+}
+
 // ── Filter ────────────────────────────────────────────────────────────────────
 var debounceTimer;
 document.getElementById('inp-search').addEventListener('input', function() {
@@ -992,6 +1110,7 @@ function openTambah() {
   document.getElementById('t-role').value  = '';
   document.getElementById('t-plant').value = '';
   document.getElementById('t-plant-wrap').style.display = 'none';
+  document.getElementById('t-plant-new-wrap').style.display = 'none';
   document.getElementById('t-error').style.display      = 'none';
   var btn = document.getElementById('btn-simpan-tambah');
   btn.disabled  = false;
@@ -1038,7 +1157,7 @@ function simpanUser() {
 // ── Edit ──────────────────────────────────────────────────────────────────────
 function openEdit(id) {
   document.getElementById('e-error').style.display = 'none';
-  document.getElementById('e-password').value      = '';
+  document.getElementById('e-plant-new-wrap').style.display = 'none';
   fetch('/user/get/' + id)
     .then(function(r){ return r.json(); })
     .then(function(data){
@@ -1063,18 +1182,19 @@ function openEdit(id) {
 }
 
 function updateUser() {
-  var id  = document.getElementById('e-id').value;
+  var id    = document.getElementById('e-id').value;
+  var elErr = document.getElementById('e-error');
+
   var btn = document.getElementById('btn-simpan-edit');
   btn.disabled  = true;
   btn.innerHTML = '⏳ Menyimpan...';
-  document.getElementById('e-error').style.display = 'none';
+  elErr.style.display = 'none';
 
   fetch('/user/update/' + id, {
     method: 'POST',
     body: new URLSearchParams({
       nama:     document.getElementById('e-nama').value.trim(),
       username: document.getElementById('e-username').value.trim(),
-      password: document.getElementById('e-password').value,
       role:     document.getElementById('e-role').value,
       plant_id: document.getElementById('e-plant').value,
     })

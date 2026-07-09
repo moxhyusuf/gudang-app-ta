@@ -133,6 +133,7 @@
 
 <!-- ══════════════════ PASS DATA KE JS ══════════════════ -->
 <script>
+UnsavedGuard.watch('#tab-form', 'Data booking (tanggal, catatan, atau keranjang) yang sedang diisi belum disimpan. Yakin ingin pindah halaman?');
 var BK = {
   step      : 1,
   noBooking : '<?= esc($no_booking) ?>',
@@ -392,6 +393,7 @@ function bkAddToCart(matId){
   }
 
   // Re-render step 1 (persis cara mockup) — keranjang otomatis muncul di bawah
+  UnsavedGuard.markDirty();
   renderStep1();
 }
 
@@ -565,6 +567,7 @@ function bkSubmit(){
   .then(function(r){ return r.json(); })
   .then(function(res){
     if (res.success){
+      UnsavedGuard.markClean();
       renderStep4(res.no_booking);
     } else {
       btn.disabled=false; btn.textContent='✓ Submit Booking';

@@ -200,6 +200,7 @@ $colspan = $isPlant ? 7 : 11;
         <label class="filter-label" style="display:block;margin-bottom:4px">Requester / Pemilik</label>
         <input type="text" id="edit-kep-requester" class="form-control-gt" style="width:100%"
                list="edit-kep-requester-list" placeholder="Nama requester / pemilik">
+        <input type="hidden" id="edit-kep-requester-original" value="">
         <datalist id="edit-kep-requester-list"></datalist>
       </div>
 
@@ -527,10 +528,6 @@ function showKepemilikan(matId, matNama) {
             html += '<div class="kep-warning">&#9888; Ada <strong>' + fmtNum(sisaTanpaOwner) + ' ' + escHtml(mat.satuan) + '</strong> stok tanpa requester tercatat' +
                 (canEdit ? ' &nbsp;<button class="btn-g btn-out-g" style="padding:.3rem .7rem;font-size:.75rem;margin-left:.4rem" onclick="openEditKepemilikan(' + matId + ', \'\', 0)">+ Catat Pemilik</button>' : '') +
                 '</div>';
-        } else if (canEdit) {
-            html += '<div style="margin-top:.8rem;text-align:right">' +
-                '<button class="btn-g btn-out-g" style="padding:.3rem .8rem;font-size:.78rem" onclick="openEditKepemilikan(' + matId + ', \'\', 0)">+ Tambah Requester Baru</button>' +
-                '</div>';
         }
 
         document.getElementById('modal-kep-body').innerHTML = html;
@@ -552,6 +549,7 @@ document.getElementById('modal-kepemilikan').addEventListener('click', function(
 function openEditKepemilikan(matId, requesterName, currentQty) {
     document.getElementById('edit-kep-material-id').value = matId;
     document.getElementById('edit-kep-requester').value   = requesterName;
+    document.getElementById('edit-kep-requester-original').value = requesterName;
     document.getElementById('edit-kep-qty').value          = currentQty;
     document.getElementById('edit-kep-error').style.display = 'none';
 
@@ -593,6 +591,7 @@ document.getElementById('modal-edit-kepemilikan').addEventListener('click', func
 function simpanEditKepemilikan() {
     var matId      = document.getElementById('edit-kep-material-id').value;
     var requester  = document.getElementById('edit-kep-requester').value.trim();
+    var requesterOriginal = document.getElementById('edit-kep-requester-original').value;
     var qty        = parseInt(document.getElementById('edit-kep-qty').value || 0);
     var errBox     = document.getElementById('edit-kep-error');
     errBox.style.display = 'none';
@@ -611,7 +610,8 @@ function simpanEditKepemilikan() {
     fetch('/monitoring/kepemilikan/simpan/' + matId, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-        body: 'requester=' + encodeURIComponent(requester) + '&qty=' + encodeURIComponent(qty)
+        body: 'requester=' + encodeURIComponent(requester) + '&qty=' + encodeURIComponent(qty) +
+              '&original_requester=' + encodeURIComponent(requesterOriginal)
     })
     .then(function(r){ return r.json(); })
     .then(function(res){

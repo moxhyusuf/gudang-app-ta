@@ -91,6 +91,7 @@ $routes->get('/pengeluaran/requester/(:num)', 'Pengeluaran::requesterList/$1', [
 // Manajemen User (hanya admin_gt)
 $routes->get('/user',                    'User::index',        ['filter' => 'auth']);
 $routes->post('/user/simpan',            'User::simpan',       ['filter' => 'auth']);
+$routes->post('/user/tambah-plant',      'User::tambahPlant',  ['filter' => 'auth']);
 $routes->get('/user/get/(:num)',         'User::get/$1',       ['filter' => 'auth']);
 $routes->post('/user/update/(:num)',     'User::update/$1',    ['filter' => 'auth']);
 $routes->post('/user/toggle-status/(:num)', 'User::toggleStatus/$1', ['filter' => 'auth']);

@@ -284,6 +284,8 @@
 </div>
 
 <script>
+UnsavedGuard.watch('.profil-right', 'Ada perubahan nama/password yang belum disimpan. Yakin ingin pindah halaman?');
+
 /* ── CSRF helper ──────────────────────────────────────────── */
 function getCsrf() {
   return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -414,6 +416,7 @@ document.getElementById('btn-simpan-nama').addEventListener('click', async funct
         if (av) av.textContent = initials;
       }
       showToast(data.message, 'ok');
+      UnsavedGuard.markClean();
     } else {
       showToast(data.message, 'err');
     }
@@ -452,6 +455,7 @@ document.getElementById('btn-ganti-pw').addEventListener('click', async function
       document.getElementById('inp-pw-baru').value    = '';
       document.getElementById('inp-pw-konfirm').value = '';
       showToast(data.message, 'ok');
+      UnsavedGuard.markClean();
     } else {
       showToast(data.message, 'err');
     }

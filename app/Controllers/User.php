@@ -53,23 +53,81 @@ class User extends BaseController
             return $this->json(['success' => false, 'message' => 'Password minimal 6 karakter.']);
         }
         if ($this->userModel->usernameExists($username)) {
-            return $this->json(['success' => false, 'message' => 'Username sudah digunakan.']);
+            return $this->json(['success' => false, 'message' => 'Username "' . $username . '" sudah digunakan (termasuk oleh akun yang sudah dihapus). Gunakan username lain.']);
         }
         // Role plant wajib pilih plant
         if ($role === 'plant' && !$plant_id) {
             return $this->json(['success' => false, 'message' => 'Role Plant wajib memilih Plant.']);
         }
 
-        $this->userModel->insert([
-            'nama'      => $nama,
-            'username'  => $username,
-            'password'  => md5($password),
-            'role'      => $role,
-            'plant_id'  => $plant_id,
-            'is_active' => 1,
-        ]);
+        try {
+            $this->userModel->insert([
+                'nama'      => $nama,
+                'username'  => $username,
+                'password'  => md5($password),
+                'role'      => $role,
+                'plant_id'  => $plant_id,
+                'is_active' => 1,
+            ]);
+        } catch (\CodeIgniter\Database\Exceptions\DatabaseException $e) {
+            return $this->json(['success' => false, 'message' => 'Gagal menyimpan user: username kemungkinan sudah dipakai. Coba username lain.']);
+        }
 
         return $this->json(['success' => true, 'message' => 'User berhasil ditambahkan.']);
+    }
+
+    // ── Tambah plant baru (dipanggil dari form Tambah/Edit User) ───────────────
+    public function tambahPlant()
+    {
+        $nama = trim((string) $this->request->getPost('nama_plant'));
+
+        if (!$nama) {
+            return $this->json(['success' => false, 'message' => 'Nama plant wajib diisi.']);
+        }
+        if (strlen($nama) < 2) {
+            return $this->json(['success' => false, 'message' => 'Nama plant minimal 2 karakter.']);
+        }
+
+        $db = \Config\Database::connect();
+
+        $existing = $db->table('plants')->where('nama_plant', $nama)->get()->getRowArray();
+        if ($existing) {
+            return $this->json(['success' => false, 'message' => 'Plant dengan nama tersebut sudah ada.']);
+        }
+
+        // Kolom `kode_plant` di tabel `plants` bersifat unique. Kita buatkan
+        // kode secara otomatis dari nama plant (mis. "Pack Area" -> "PACK_AREA"),
+        // lalu pastikan tidak bentrok dengan kode yang sudah ada dengan
+        // menambahkan angka di belakang bila perlu (PACK_AREA2, PACK_AREA3, ...).
+        $baseKode = strtoupper(preg_replace('/[^A-Za-z0-9]+/', '_', $nama));
+        $baseKode = trim($baseKode, '_');
+        if ($baseKode === '') {
+            $baseKode = 'PLANT';
+        }
+
+        $kode = $baseKode;
+        $suffix = 2;
+        while ($db->table('plants')->where('kode_plant', $kode)->get()->getRowArray()) {
+            $kode = $baseKode . $suffix;
+            $suffix++;
+        }
+
+        try {
+            $db->table('plants')->insert([
+                'nama_plant' => $nama,
+                'kode_plant' => $kode,
+                'is_active'  => 1,
+            ]);
+        } catch (\CodeIgniter\Database\Exceptions\DatabaseException $e) {
+            return $this->json(['success' => false, 'message' => 'Gagal menambah plant. Coba ulangi dengan nama yang sedikit berbeda.']);
+        }
+        $id = $db->insertID();
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Plant "' . $nama . '" berhasil ditambahkan.',
+            'data'    => ['id' => $id, 'nama_plant' => $nama],
+        ]);
     }
 
     // ── Ambil data satu user (untuk form edit) ────────────────────────────────
@@ -84,6 +142,10 @@ class User extends BaseController
     }
 
     // ── Update user ───────────────────────────────────────────────────────────
+    // Catatan: sengaja TIDAK menerima/mengubah field password di sini.
+    // Admin tidak diperbolehkan mengubah password milik user lain — user
+    // hanya bisa mengganti password miliknya sendiri lewat halaman Profil
+    // (Profil::updatePassword), yang mewajibkan password lama sebagai verifikasi.
     public function update($id)
     {
         $user = $this->userModel->find($id);
@@ -93,7 +155,6 @@ class User extends BaseController
 
         $nama     = trim($this->request->getPost('nama'));
         $username = trim($this->request->getPost('username'));
-        $password = $this->request->getPost('password');
         $role     = $this->request->getPost('role');
         $plant_id = $this->request->getPost('plant_id') ?: null;
 
@@ -101,7 +162,7 @@ class User extends BaseController
             return $this->json(['success' => false, 'message' => 'Nama, username, dan role wajib diisi.']);
         }
         if ($this->userModel->usernameExists($username, $id)) {
-            return $this->json(['success' => false, 'message' => 'Username sudah digunakan user lain.']);
+            return $this->json(['success' => false, 'message' => 'Username "' . $username . '" sudah digunakan user lain (termasuk akun yang sudah dihapus).']);
         }
         if ($role === 'plant' && !$plant_id) {
             return $this->json(['success' => false, 'message' => 'Role Plant wajib memilih Plant.']);
@@ -113,14 +174,16 @@ class User extends BaseController
             'role'     => $role,
             'plant_id' => $plant_id,
         ];
-        if ($password) {
-            if (strlen($password) < 6) {
-                return $this->json(['success' => false, 'message' => 'Password minimal 6 karakter.']);
-            }
-            $data['password'] = md5($password);
+
+        try {
+            $ok = $this->userModel->update($id, $data);
+        } catch (\CodeIgniter\Database\Exceptions\DatabaseException $e) {
+            return $this->json(['success' => false, 'message' => 'Gagal menyimpan perubahan: username kemungkinan sudah dipakai.']);
+        }
+        if ($ok === false) {
+            return $this->json(['success' => false, 'message' => 'Gagal menyimpan perubahan: ' . implode(' ', $this->userModel->errors())]);
         }
 
-        $this->userModel->update($id, $data);
         return $this->json(['success' => true, 'message' => 'User berhasil diperbarui.']);
     }
 
